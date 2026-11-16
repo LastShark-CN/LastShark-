@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shoot Demo · 射击小游戏 · LastShark</title>
+<meta name="description" content="一款简单的射击小游戏，目前是半成品（0.1.1-alpha）。分卷压缩包下载，仅限 Windows 10 及以上系统运行。">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script src="../assets/js/theme.js"></script>
+<style>
+/* 本页专用：下载清单与规格区 */
+.gd-hero{display:grid;grid-template-columns:minmax(0,1fr);gap:clamp(16px,3vw,28px);align-items:start}
+@media (min-width:920px){.gd-hero{grid-template-columns:minmax(0,1.45fr) minmax(0,.85fr)}}
+.gd-lead{padding:clamp(22px,3.6vw,38px)}
+.gd-badge-row{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:18px}
+.gd-badge{
+  font-family:var(--fm);font-size:10.6px;letter-spacing:.1em;padding:5px 12px;border-radius:999px;
+  border:1px solid var(--stroke-2);color:var(--muted);background:rgba(255,255,255,.05);
+}
+.gd-badge.warn{color:#ffb27d;border-color:rgba(255,157,77,.5);background:rgba(255,157,77,.12)}
+.gd-badge.os{color:#8fd8ff;border-color:rgba(95,216,255,.45);background:rgba(95,216,255,.1)}
+.gd-lead h1{font-size:clamp(26px,4.4vw,40px);letter-spacing:-.02em;line-height:1.2;font-weight:800}
+.gd-lead p{margin-top:14px;color:var(--muted);font-size:15px;line-height:1.9;max-width:62ch}
+.gd-lead p b{color:var(--ink)}
+.gd-specs{padding:clamp(18px,2.6vw,26px);display:grid;gap:13px;align-content:start}
+.gd-row{display:flex;gap:12px;align-items:baseline;font-size:13.6px;min-width:0}
+.gd-row dt{font-family:var(--fm);font-size:10.6px;letter-spacing:.1em;color:var(--dim);flex:0 0 auto;min-width:76px}
+.gd-row dd{margin:0;color:var(--ink);font-weight:600;overflow-wrap:anywhere}
+.gd-row dd small{display:block;font-weight:400;color:var(--dim);font-size:11.6px;margin-top:3px;line-height:1.6}
+.gd-dl{padding:clamp(18px,2.6vw,26px)}
+.gd-dl h2{font-size:17px;font-weight:750;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.gd-dl h2 em{font-style:normal;font-family:var(--fm);font-size:10.4px;letter-spacing:.12em;color:var(--dim)}
+.gd-dl .hint{margin-top:10px;font-size:12.6px;color:var(--dim);line-height:1.75}
+.gd-parts{margin-top:16px;display:grid;gap:6px;max-height:296px;overflow-y:auto;scrollbar-width:thin;padding-right:4px}
+.gd-parts::-webkit-scrollbar{width:4px}
+.gd-parts::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:4px}
+.gd-part{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:11px;
+  background:rgba(255,255,255,.045);border:1px solid var(--stroke);min-width:0;
+  font-family:var(--fm);font-size:11.4px;letter-spacing:.03em;color:var(--muted);
+  transition:background .2s,border-color .2s,transform .2s;
+}
+.gd-part:hover{background:rgba(95,216,255,.1);border-color:rgba(95,216,255,.4);color:var(--ink);transform:translateX(3px)}
+.gd-part i{font-style:normal;flex:0 0 auto;width:26px;color:var(--dim)}
+.gd-part span{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gd-part b{flex:0 0 auto;font-weight:500;color:var(--dim)}
+.gd-part svg{width:14px;height:14px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+.gd-steps{margin-top:18px;padding:16px 18px;border-radius:var(--r-md);background:rgba(255,255,255,.04);border:1px dashed var(--stroke-2)}
+.gd-steps h3{font-size:13.6px;font-weight:700;margin-bottom:10px}
+.gd-steps ol{margin:0;padding-left:19px;display:grid;gap:7px;color:var(--muted);font-size:13px;line-height:1.7}
+.gd-steps code{font-family:var(--fm);font-size:12px;color:var(--amber-2);background:rgba(255,157,77,.1);padding:1px 6px;border-radius:6px}
+.gd-warn{
+  margin-top:14px;padding:13px 16px;border-radius:var(--r-sm);
+  background:rgba(255,157,77,.08);border:1px solid rgba(255,157,77,.34);
+  color:#ffd0a8;font-size:12.8px;line-height:1.7;
+}
+</style>
+</head>
+<body data-page="games">
+
+<!-- SECTION: bg-markup -->
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+<div class="bg-fallback" aria-hidden="true"></div>
+<div class="bg-veil" aria-hidden="true"></div>
+<div class="bg-grain" aria-hidden="true"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="liquidWarp">
+    <feTurbulence type="fractalNoise" baseFrequency="0.012 0.026" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="16" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<div class="shell">
+
+  <nav class="crumbs rv" aria-label="面包屑">
+    <a href="../index.html">首页</a><i>/</i><a href="../games.html">小游戏</a><i>/</i><span>Shoot Demo</span>
+  </nav>
+
+  <main>
+    <section>
+      <div class="gd-hero">
+
+        <!-- SECTION: lead -->
+        <article class="gd-lead gcard rv">
+          <div class="gd-badge-row">
+            <span class="gd-badge warn">半成品 · 0.1.1-alpha</span>
+            <span class="gd-badge os">仅限 Windows</span>
+            <span class="gd-badge">需 Windows 10 及以上</span>
+            <span class="gd-badge">32 个分卷 · 312.3 MB</span>
+          </div>
+          <h1>Shoot Demo</h1>
+          <p>一款简单的射击小游戏。玩法直白：移动、瞄准、开火，把屏幕上出现的目标清掉。目前还是<b>半成品</b>——版本号停在 <b>0.1.1-alpha</b>，关卡、数值和手感都只做到了能跑通的程度， bug 和空缺的玩法都不少。</p>
+          <p>它最早是我用来练手引擎和地形渲染的小项目，包里的 <code style="font-family:var(--fm);font-size:12.6px;color:var(--amber-2)">libterrain.windows.debug.x86_64.dll</code> 就是那份地形库的调试构建。所以你会在游戏里看到一些和射击本身关系不大的地形测试痕迹，那是它的来历，不是 bug（好吧，也有一部分是 bug）。</p>
+          <p>放出来不是为了让你夸它完成度高，而是想留个存档：看看一个半成品长什么样，也欢迎你告诉我哪里手感不对。后续如果继续做，会在这里更新进度。</p>
+
+          <div class="gd-steps">
+            <h3>怎么玩</h3>
+            <ol>
+              <li>把 32 个分卷全部下载到<b>同一个文件夹</b>，文件名不要改。</li>
+              <li>用 7-Zip 或 Bandizip 打开 <code>Shoot Demo.zip.001</code>，选"解压到当前文件夹"，会自动合并所有分卷。</li>
+              <li>进入解出的 <code>Shoot Demo</code> 文件夹，双击 <code>Shoot Demo 0.1.1-alpha.exe</code> 运行。</li>
+              <li>首次运行若被 Windows Defender 或 SmartScreen 拦截，属正常现象（未签名程序），确认来源后可选择"仍要运行"。</li>
+            </ol>
+          </div>
+
+          <div class="gd-warn">
+            提醒：这是未签名的个人作品，杀毒软件可能误报；下载请只认本页链接。游戏为 alpha 阶段，存档、分辨率选项和部分按键映射尚未实现，遇到闪退属于预期内行为。
+          </div>
+        </article>
+
+        <!-- SECTION: specs + downloads -->
+        <aside style="display:grid;gap:14px;align-content:start">
+          <div class="gd-specs gcard rv rv-d1">
+            <div class="gd-row"><dt>名称</dt><dd>Shoot Demo</dd></div>
+            <div class="gd-row"><dt>版本</dt><dd>0.1.1-alpha<small>半成品，非正式发布版</small></dd></div>
+            <div class="gd-row"><dt>类型</dt><dd>射击 · 单人</dd></div>
+            <div class="gd-row"><dt>系统</dt><dd>Windows 10 及以上<small>仅 Windows，无 macOS / Linux 版本</small></dd></div>
+            <div class="gd-row"><dt>体积</dt><dd>312.3 MB<small>32 个分卷，单卷约 10 MB</small></dd></div>
+            <div class="gd-row"><dt>主程序</dt><dd>Shoot Demo 0.1.1-alpha.exe</dd></div>
+            <div class="gd-row"><dt>依赖</dt><dd>libterrain.windows.debug.x86_64.dll<small>随包附带，无需单独安装</small></dd></div>
+            <div class="gd-row"><dt>语言</dt><dd>简体中文 / English</dd></div>
+          </div>
+
+          <div class="gd-dl gcard rv rv-d2">
+            <h2>分卷下载 <em>32 PARTS</em></h2>
+            <p class="hint">逐卷点击下载；也可全部右键另存。必须集齐 32 个分卷才能解压，缺任意一卷都会失败。</p>
+            <div class="gd-parts" id="gd-parts"></div>
+          </div>
+        </aside>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- SECTION: footer -->
+  <footer class="foot">
+    <div class="foot-in">
+      <p>© LastShark · <span class="year">2026</span></p>
+      <div class="foot-links">
+        <a href="../index.html">首页</a>
+        <a href="../photos.html">照片墙</a>
+        <a href="../articles.html">文章</a>
+        <a href="../mods.html">模组</a>
+        <a href="../games.html">小游戏</a>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- SECTION: nav-dock -->
+<nav class="dock" id="dock" aria-label="主导航">
+  <div class="dock-glass" aria-hidden="true"></div>
+  <div class="dock-list" id="dock-list">
+    <i class="dock-ind" id="dock-ind" aria-hidden="true"></i>
+    <button class="nav-item" type="button" data-target="home" data-href="../index.html">
+      <svg viewBox="0 0 24 24"><path d="M4 11l8-6.5 8 6.5v8a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 014 19z"/><path d="M10 20v-5h4v5"/></svg>
+      <span>首页</span>
+    </button>
+    <button class="nav-item" type="button" data-target="photos" data-href="../photos.html">
+      <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.4"/><circle cx="9" cy="10.2" r="1.7"/><path d="M4.4 17.2l4.8-3.8 3.6 2.8 2.8-2 3.9 3"/></svg>
+      <span>照片墙</span>
+    </button>
+    <button class="nav-item" type="button" data-target="articles" data-href="../articles.html">
+      <svg viewBox="0 0 24 24"><path d="M6 3.5h9l3.5 3.5v13.5H6z"/><path d="M14.6 3.7V7.4h3.6"/><path d="M9 12h7M9 15.6h5"/></svg>
+      <span>文章</span>
+    </button>
+    <button class="nav-item" type="button" data-target="mods" data-href="../mods.html">
+      <svg viewBox="0 0 24 24"><path d="M12 3l8 4.4v9.2L12 21l-8-4.4V7.4z"/><path d="M4 7.4l8 4.4 8-4.4M12 11.8V21"/></svg>
+      <span>模组</span>
+    </button>
+    <button class="nav-item" type="button" data-target="games" data-href="../games.html">
+      <svg viewBox="0 0 24 24"><rect x="2.5" y="7.5" width="19" height="10" rx="4.2"/><path d="M7 10.8v3.4M5.3 12.5h3.4"/><circle cx="16" cy="11.6" r="1.05"/><circle cx="18.2" cy="14" r="1.05"/></svg>
+      <span>小游戏</span>
+    </button>
+  </div>
+</nav>
+
+<!-- SECTION: back-to-top -->
+<button class="to-top" type="button" id="to-top" aria-label="回到顶部" title="回到顶部">
+  <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* 分卷清单：文件名与体积来自磁盘实测，路径指向 assets/games/ShootDemo/ */
+(function () {
+  'use strict';
+  var SIZES = [10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,2.31];
+  var box = document.getElementById('gd-parts');
+  if (!box) return;
+  var ARROW = '<svg viewBox="0 0 24 24"><path d="M12 4v11M6.5 10.5L12 16l5.5-5.5M4.5 19.5h15"/></svg>';
+  for (var i = 1; i <= 32; i++) {
+    var nn = i < 10 ? '00' + i : (i < 100 ? '0' + i : String(i));
+    var fname = 'Shoot Demo.zip.' + nn;
+    var a = document.createElement('a');
+    a.className = 'gd-part';
+    a.setAttribute('href', '../assets/games/ShootDemo/' + encodeURIComponent(fname));
+    a.setAttribute('download', fname);
+    a.setAttribute('title', '下载 ' + fname + '（' + SIZES[i-1] + ' MB）');
+    var idx = document.createElement('i');
+    idx.textContent = nn;
+    var nm = document.createElement('span');
+    nm.textContent = fname;
+    var sz = document.createElement('b');
+    sz.textContent = SIZES[i-1] + ' MB';
+    a.appendChild(idx); a.appendChild(nm); a.appendChild(sz);
+    var w = document.createElement('span');
+    w.innerHTML = ARROW;
+    a.appendChild(w.firstChild);
+    box.appendChild(a);
+  }
+})();
+</script>
+<script src="../assets/js/nav.js"></script>
+<script src="../assets/js/background-plaid.js"></script>
+</body>
+</html>
